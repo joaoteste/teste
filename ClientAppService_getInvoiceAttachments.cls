@@ -1,0 +1,46 @@
+public class ClientAppService_getInvoiceAttachments extends ClientAppService{
+    
+    public override Map<String,Object> execute(String sessionToken, Map<String,Object> args){
+        super.execute(sessionToken, args);
+        //if has map.entry is because there was an error
+        if(toReturn.size() > 0){
+            return toReturn;
+        }
+        
+        if(!args.containsKey('invoiceId')){
+            toReturn.put('errorCode','NO_INVOICE_ID');
+            return toReturn;
+        }
+        
+        Id invoiceId = Id.valueOf((String)args.get('invoiceId'));
+        
+        List<Attachment> atts = [SELECT Id, Name, Body, ContentType, Description FROM Attachment WHERE ParentId = :invoiceId];
+        if(atts == null || atts.size() == 0){
+            toReturn.put('errorCode','NO_INVOICE_ATT_FOUND');
+            return toReturn;
+        }
+        
+        toReturn.put('invoiceAttachments',convertAttachmentsToMap(atts));
+        
+        return toReturn;
+    }
+    
+    private List<Map<String,Object>> convertAttachmentsToMap(List<Attachment> atts){
+    	List<Map<String, Object>> converted = new List<Map<String, Object>>();
+    	
+    	for(Attachment att : atts){
+    		Map<String, Object> attMap = new Map<String,String>();
+        
+        	attMap.put('Id',att.Id);
+        	attMap.put('Name',att.Name);
+        	String bodyStr = EncodingUtil.base64Encode(att.Body);
+        	attMap.put('Body', bodyStr);
+        	attMap.put('ContentType',att.ContentType);
+        	attMap.put('Description',att.Description);
+        	
+        	converted.add(attMap);
+    	}
+        
+        return converted;
+    }
+}
